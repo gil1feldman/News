@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מחשבון מחיר ליחידה</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      margin: 40px auto;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    label {
+      margin-bottom: 6px;
+      display: block;
+      font-weight: 600;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #result {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #27ae60;
+    }
+    @media (max-width: 480px) {
+      .container {
+        margin: 20px;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>מחשבון מחיר ליחידה</h2>
+
+    <label for="unit">בחר את סוג היחידה בה מופיעה הכמות על האריזה:</label>
+    <select id="unit">
+      <option value="1000">גרם (למשל: 75 גרם → חישוב לפי ק"ג)</option>
+      <option value="1">קילוגרם (למשל: 1.2 ק"ג)</option>
+      <option value="1000">מיליליטר (למשל: 500 מ"ל → חישוב לפי ליטר)</option>
+      <option value="1">ליטר (למשל: 1.5 ליטר)</option>
+      <option value="1">יחידות (למשל: 12 ביצים)</option>
+    </select>
+
+    <label for="quantity">כמות בפועל (כפי שמופיעה על האריזה):</label>
+    <input type="number" id="quantity" placeholder="לדוגמה: 75">
+
+    <label for="price">מחיר בפועל (בש"ח):</label>
+    <input type="number" id="price" placeholder="לדוגמה: 4.5" step="0.01">
+
+    <button onclick="calculatePricePerUnit()">חשב מחיר ליחידה סטנדרטית</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function calculatePricePerUnit() {
+      const unit = parseFloat(document.getElementById('unit').value);
+      const quantity = parseFloat(document.getElementById('quantity').value);
+      const price = parseFloat(document.getElementById('price').value);
+      const result = document.getElementById('result');
+
+      if (!quantity || !price || quantity <= 0 || price < 0) {
+        result.textContent = 'אנא הזן ערכים תקינים לכמות ולמחיר';
+        result.style.color = 'red';
+        return;
+      }
+
+      const standardizedQuantity = quantity / unit;
+      const pricePerUnit = price / standardizedQuantity;
+
+      result.style.color = '#27ae60';
+      result.textContent = `המחיר ליחידה סטנדרטית הוא: ${pricePerUnit.toFixed(2)} ש"ח`;
+    }
+  </script>
+</body>
+</html>
