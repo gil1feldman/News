@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>הצעות חוק הכנסת ה־25</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script defer>
     document.addEventListener("DOMContentLoaded", async () => {
       const baseUrl = 'https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/LawSuggestionsSearch.aspx?t=lawsuggestionssearch&st=currentknesset&ki=25&sb=LatestSessionDate&so=D&pn=';
@@ -10,6 +11,10 @@
       const lawPattern = /<tr[^>]+>[\s\S]*?data-label="מספר כנסת">([^<]+)[\s\S]*?href="([^"]+)"[^>]*>([^<]+)[\s\S]*?data-label="סוג הצעה">([^<]+)[\s\S]*?data-label="שלב">([^<]*)[\s\S]*?data-label="תאריך עדכון אחרון">([^<]*)/g;
 
       const output = document.getElementById("output");
+      if (!output) {
+        console.error("לא נמצא אלמנט עם id='output'");
+        return;
+      }
 
       for (let pn = 1; pn <= 3; pn++) {
         try {
@@ -38,12 +43,11 @@
             output.appendChild(row);
           }
         } catch (e) {
-          console.error(`בעיה בטעינת עמוד ${pn}:`, e);
+          console.error(`שגיאה בטעינת עמוד ${pn}:`, e);
         }
       }
     });
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 text-gray-900 p-4 font-sans">
   <h1 class="text-2xl font-bold mb-4 text-center">הצעות חוק הכנסת ה־25 (3 עמודים ראשונים)</h1>
