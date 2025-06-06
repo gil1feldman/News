@@ -6,34 +6,39 @@
   <script defer>
     document.addEventListener("DOMContentLoaded", async () => {
       const baseUrl = 'https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/LawSuggestionsSearch.aspx?t=lawsuggestionssearch&st=currentknesset&ki=25&sb=LatestSessionDate&so=D&pn=';
+      const proxy = 'https://thingproxy.freeboard.io/fetch/';
       const lawPattern = /<tr[^>]+>[\s\S]*?data-label="מספר כנסת">([^<]+)[\s\S]*?href="([^"]+)"[^>]*>([^<]+)[\s\S]*?data-label="סוג הצעה">([^<]+)[\s\S]*?data-label="שלב">([^<]*)[\s\S]*?data-label="תאריך עדכון אחרון">([^<]*)/g;
 
       const output = document.getElementById("output");
 
       for (let pn = 1; pn <= 3; pn++) {
-        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl + pn)}`);
-        const html = await res.text();
-        let match;
-        while ((match = lawPattern.exec(html)) !== null) {
-          const row = document.createElement("tr");
-          row.className = "border-b";
-          for (let i = 1; i <= 6; i++) {
-            const td = document.createElement("td");
-            td.className = "p-2";
-            if (i === 2) {
-              const link = document.createElement("a");
-              link.href = "https://main.knesset.gov.il" + match[i];
-              link.textContent = match[i + 1];
-              link.target = "_blank";
-              link.className = "text-blue-600 underline";
-              td.appendChild(link);
-              i++; // skip title text
-            } else {
-              td.textContent = match[i];
+        try {
+          const res = await fetch(proxy + encodeURIComponent(baseUrl + pn));
+          const html = await res.text();
+          let match;
+          while ((match = lawPattern.exec(html)) !== null) {
+            const row = document.createElement("tr");
+            row.className = "border-b";
+            for (let i = 1; i <= 6; i++) {
+              const td = document.createElement("td");
+              td.className = "p-2";
+              if (i === 2) {
+                const link = document.createElement("a");
+                link.href = "https://main.knesset.gov.il" + match[i];
+                link.textContent = match[i + 1];
+                link.target = "_blank";
+                link.className = "text-blue-600 underline";
+                td.appendChild(link);
+                i++; // skip title text
+              } else {
+                td.textContent = match[i];
+              }
+              row.appendChild(td);
             }
-            row.appendChild(td);
+            output.appendChild(row);
           }
-          output.appendChild(row);
+        } catch (e) {
+          console.error(`בעיה בטעינת עמוד ${pn}:`, e);
         }
       }
     });
