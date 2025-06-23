@@ -2,68 +2,112 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>הצעות חוק הכנסת ה־25</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>איש תלוי – יישובים עם התרעות</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer>
-    document.addEventListener("DOMContentLoaded", async () => {
-      const baseUrl = 'https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/LawSuggestionsSearch.aspx?t=lawsuggestionssearch&st=currentknesset&ki=25&sb=LatestSessionDate&so=D&pn=';
-      const proxy = 'https://thingproxy.freeboard.io/fetch/';
-      const lawPattern = /<tr[^>]+>[\s\S]*?data-label="מספר כנסת">([^<]+)[\s\S]*?href="([^"]+)"[^>]*>([^<]+)[\s\S]*?data-label="סוג הצעה">([^<]+)[\s\S]*?data-label="שלב">([^<]*)[\s\S]*?data-label="תאריך עדכון אחרון">([^<]*)/g;
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+    integrity="sha512-oqcGP3HS7b3a4ZC6GTN+Q9UroW0aakjjj4xjNv3l4g5Vq6JuTCQHMTtdFfULx3YqKlAyGfP6GSrEQe5YB1YCpA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 flex items-center justify-center min-h-screen p-4">
 
-      const output = document.getElementById("output");
-      if (!output) {
-        console.error("לא נמצא אלמנט עם id='output'");
-        return;
-      }
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 space-y-6 text-center">
+    <h1 class="text-2xl font-bold">איש תלוי – יישובים עם התרעות</h1>
+    <div id="hangman" class="text-red-600 text-xl font-mono min-h-[4rem]">טוען נתונים...</div>
+    <div id="word" class="text-3xl font-bold tracking-widest mb-4 select-none">_ _ _</div>
+    <div class="text-gray-600 text-sm">הקלד/י אות בעברית כדי לנחש</div>
+    <button onclick="startGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600">
+      התחל מחדש
+    </button>
+  </div>
 
-      for (let pn = 1; pn <= 3; pn++) {
-        try {
-          const res = await fetch(proxy + encodeURIComponent(baseUrl + pn));
-          const html = await res.text();
-          let match;
-          while ((match = lawPattern.exec(html)) !== null) {
-            const row = document.createElement("tr");
-            row.className = "border-b";
-            for (let i = 1; i <= 6; i++) {
-              const td = document.createElement("td");
-              td.className = "p-2";
-              if (i === 2) {
-                const link = document.createElement("a");
-                link.href = "https://main.knesset.gov.il" + match[i];
-                link.textContent = match[i + 1];
-                link.target = "_blank";
-                link.className = "text-blue-600 underline";
-                td.appendChild(link);
-                i++; // skip title text
-              } else {
-                td.textContent = match[i];
-              }
-              row.appendChild(td);
-            }
-            output.appendChild(row);
-          }
-        } catch (e) {
-          console.error(`שגיאה בטעינת עמוד ${pn}:`, e);
+  <script>
+    const csvUrl = 'https://raw.githubusercontent.com/yuval-harpaz/alarms/master/data/alarms.csv';
+    let words = [];
+    const hebrewAlphabet = [...'אבגדהוזחטיכלמנסעפצקרשתםןךףץ'];
+
+    let chosenWord = '';
+    let guessedLetters = [];
+    let wrongGuesses = 0;
+    let gameOver = false;
+
+    const wordDiv = document.getElementById('word');
+    const hangmanDiv = document.getElementById('hangman');
+
+    Papa.parse(csvUrl, {
+      download: true,
+      header: false,
+      complete: (results) => {
+        const rawRows = results.data;
+        const names = rawRows.map(row => row[row.length - 2]?.trim()).filter(Boolean);
+        // סינון יישובים בעברית בלבד
+        words = [...new Set(names.filter(name => /^[\u0590-\u05FF\s\-]+$/.test(name)))];
+        if (words.length === 0) {
+          hangmanDiv.textContent = 'לא נמצאו יישובים';
+          return;
         }
+        startGame();
+      },
+      error: err => {
+        hangmanDiv.textContent = 'שגיאה בטעינת הנתונים';
+        console.error('שגיאת טעינה:', err);
+      }
+    });
+
+    function startGame() {
+      chosenWord = words[Math.floor(Math.random() * words.length)];
+      guessedLetters = [];
+      wrongGuesses = 0;
+      gameOver = false;
+      updateWordDisplay();
+      updateHangman();
+    }
+
+    function updateWordDisplay() {
+      const display = chosenWord.split('').map(l =>
+        l === ' ' || l === '-' ? l : (guessedLetters.includes(l) ? l : '_')
+      ).join(' ');
+      wordDiv.textContent = display;
+    }
+
+    function updateHangman() {
+      hangmanDiv.textContent = `שגיאות: ${wrongGuesses}/6`;
+    }
+
+    function handleGuess(letter) {
+      if (gameOver || guessedLetters.includes(letter)) return;
+      if (!hebrewAlphabet.includes(letter)) return;
+
+      if (chosenWord.includes(letter)) {
+        guessedLetters.push(letter);
+        updateWordDisplay();
+        if (chosenWord.split('').every(l => l === ' ' || l === '-' || guessedLetters.includes(l))) {
+          gameOver = true;
+          setTimeout(() => alert('🎉 ניצחת!'), 100);
+        }
+      } else {
+        wrongGuesses++;
+        updateHangman();
+        if (wrongGuesses >= 6) {
+          gameOver = true;
+          setTimeout(() => {
+            alert(`☹️ הפסדת! המילה הייתה: ${chosenWord}`);
+            revealWord();
+          }, 100);
+        }
+      }
+    }
+
+    function revealWord() {
+      wordDiv.textContent = chosenWord.split('').join(' ');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const letter = e.key.trim();
+      if (letter.length === 1 && hebrewAlphabet.includes(letter)) {
+        handleGuess(letter);
       }
     });
   </script>
-</head>
-<body class="bg-gray-50 text-gray-900 p-4 font-sans">
-  <h1 class="text-2xl font-bold mb-4 text-center">הצעות חוק הכנסת ה־25 (3 עמודים ראשונים)</h1>
-  <div class="overflow-x-auto">
-    <table class="table-auto w-full border-collapse bg-white shadow rounded-lg">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="p-2">כנסת</th>
-          <th class="p-2">שם החוק</th>
-          <th class="p-2">סוג הצעה</th>
-          <th class="p-2">שלב</th>
-          <th class="p-2">תאריך עדכון</th>
-        </tr>
-      </thead>
-      <tbody id="output"></tbody>
-    </table>
-  </div>
 </body>
 </html>
