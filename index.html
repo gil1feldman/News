@@ -6,9 +6,7 @@
   <title>חדשות במבט אחד</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html, body { height: 100%; }
     iframe { border: none; }
-    /* מבטיחים שהכרטיסים יהיו רספונסיביים ונוחים */
   </style>
 </head>
 <body class="bg-gray-100 text-center">
@@ -20,21 +18,34 @@
   <!-- רשת האתרים -->
   <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
 
+    <!-- N12 -->
+    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
+      <h2 class="bg-gray-800 text-white text-lg p-2">N12</h2>
+      <iframe src="https://www.n12.co.il/" class="w-full h-[600px]" loading="lazy" title="N12"></iframe>
+    </section>
+
     <!-- כאן 11 -->
     <section class="border rounded-lg overflow-hidden shadow flex flex-col">
       <h2 class="bg-gray-800 text-white text-lg p-2">כאן 11</h2>
-      <iframe
-        src="https://www.kan.org.il/"
-        class="w-full h-[600px]"
-        loading="lazy"
-        title="כאן 11">
-      </iframe>
+      <iframe src="https://www.kan.org.il/" class="w-full h-[600px]" loading="lazy" title="כאן 11"></iframe>
     </section>
 
-    <!-- Ynet כתמונה מתעדכנת -->
+    <!-- הארץ -->
+    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
+      <h2 class="bg-gray-800 text-white text-lg p-2">הארץ</h2>
+      <iframe src="https://www.haaretz.co.il/" class="w-full h-[600px]" loading="lazy" title="הארץ"></iframe>
+    </section>
+
+    <!-- וואלה -->
+    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
+      <h2 class="bg-gray-800 text-white text-lg p-2">וואלה</h2>
+      <iframe src="https://www.walla.co.il/" class="w-full h-[600px]" loading="lazy" title="וואלה"></iframe>
+    </section>
+
+    <!-- Ynet: כותרות RSS -->
     <section class="border rounded-lg overflow-hidden shadow flex flex-col">
       <div class="bg-gray-800 text-white p-2 flex items-center justify-between">
-        <h2 class="text-lg">Ynet (תמונה מתעדכנת)</h2>
+        <h2 class="text-lg">Ynet ‐ כותרות חיות</h2>
         <div class="flex items-center gap-2">
           <button id="refreshYnet"
             class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
@@ -42,101 +53,72 @@
           </button>
           <a href="https://www.ynet.co.il/home/0,7340,L-8,00.html" target="_blank" rel="noopener noreferrer"
              class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-sm">
-            פתיחה
+            מעבר לאתר
           </a>
         </div>
       </div>
 
-      <!-- עטיפה שומרת יחס ומרכזת את התמונה -->
-      <div class="bg-white flex-1 flex items-center justify-center p-2">
-        <img id="ynetShot" alt="צילום מסך חי של עמוד Ynet"
-             class="max-w-full h-auto rounded"
-             decoding="async" />
+      <div class="bg-white flex-1 p-3 text-right">
+        <ul id="ynetList" class="space-y-3 text-sm text-gray-800">
+          <li class="text-gray-500">טוען כותרות…</li>
+        </ul>
       </div>
 
       <div class="text-xs text-gray-600 p-2 bg-gray-50">
-        התמונה נטענת משירות צילום מסכים ציבורי. ייתכן עיכוב קל מול האתר החי.
+        הכותרות נטענות מפיד ה־RSS הרשמי של Ynet. לחיצה פותחת ידיעה בלשונית חדשה.
       </div>
-    </section>
-
-    <!-- וואלה -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">וואלה</h2>
-      <iframe
-        src="https://www.walla.co.il/"
-        class="w-full h-[600px]"
-        loading="lazy"
-        title="וואלה">
-      </iframe>
-    </section>
-
-    <!-- N12 -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">N12</h2>
-      <iframe
-        src="https://www.n12.co.il/"
-        class="w-full h-[600px]"
-        loading="lazy"
-        title="N12">
-      </iframe>
     </section>
 
     <!-- ערוץ 14 -->
     <section class="border rounded-lg overflow-hidden shadow flex flex-col md:col-span-2 lg:col-span-1">
       <h2 class="bg-gray-800 text-white text-lg p-2">ערוץ 14</h2>
-      <iframe
-        src="https://www.c14.co.il/"
-        class="w-full h-[600px]"
-        loading="lazy"
-        title="ערוץ 14">
-      </iframe>
+      <iframe src="https://www.c14.co.il/" class="w-full h-[600px]" loading="lazy" title="ערוץ 14"></iframe>
     </section>
   </main>
 
   <!-- הערה -->
   <footer class="p-2 text-sm text-gray-600">
-    חלק מהאתרים חוסמים הטמעה בתוך iframe מטעמי אבטחה. עבור Ynet מוצגת תמונה חיה במקום iframe.
+    חלק מהאתרים חוסמים הטמעה ב־iframe. עבור Ynet מוצגות כותרות ה־RSS הרשמיות במקום iframe.
   </footer>
 
   <script>
-    // שימוש ב־WordPress mShots ליצירת צילום מסך של Ynet
-    // ניתן לשנות רוחב/רענון לפי הצורך
-    const YNET_URL = "https://www.ynet.co.il/home/0,7340,L-8,00.html";
-    const ynetImg = document.getElementById("ynetShot");
+    // ---- הגדרות ----
+    const RSS_URL = "https://www.ynet.co.il/Integration/StoryRss2.xml";
+    const RSS2JSON = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(RSS_URL);
+    const listEl = document.getElementById("ynetList");
     const refreshBtn = document.getElementById("refreshYnet");
 
-    function ynetShotUrl(width) {
-      // שירות mShots: https://s0.wp.com/mshots/v1/{ENCODED_URL}?w={width}
-      // מוסיפים פרמטר זמן למניעת קאש בדפדפן.
-      const base = "https://s0.wp.com/mshots/v1/";
-      const w = Math.max(600, Math.min(window.innerWidth, 1400));
-      const u = encodeURIComponent(YNET_URL);
-      const ts = Date.now();
-      return `${base}${u}?w=${width || w}&r=2&ts=${ts}`;
+    async function loadYnet() {
+      try {
+        listEl.innerHTML = '<li class="text-gray-500">טוען כותרות…</li>';
+        const res = await fetch(RSS2JSON, { cache: "no-store" });
+        if (!res.ok) throw new Error("RSS request failed: " + res.status);
+        const data = await res.json();
+        const items = (data.items || []).slice(0, 12);
+        if (!items.length) {
+          listEl.innerHTML = '<li class="text-gray-500">לא נמצאו כותרות כרגע.</li>';
+          return;
+        }
+        listEl.innerHTML = items.map(item => {
+          const title = item.title || "ללא כותרת";
+          const link = item.link || "#";
+          const pub = item.pubDate ? new Date(item.pubDate).toLocaleString('he-IL') : "";
+          return `
+            <li class="border-b pb-2">
+              <a href="${link}" target="_blank" rel="noopener noreferrer"
+                 class="font-medium hover:underline">${title}</a>
+              ${pub ? `<div class="text-xs text-gray-500 mt-1">${pub}</div>` : ""}
+            </li>`;
+        }).join("");
+      } catch (err) {
+        console.error(err);
+        listEl.innerHTML = `<li class="text-red-600">נכשלה טעינת ה־RSS של Ynet. נסה לרענן.</li>`;
+      }
     }
 
-    function loadYnet() {
-      ynetImg.src = ynetShotUrl();
-    }
-
-    // רענון ידני
     refreshBtn.addEventListener("click", loadYnet);
-
-    // רענון אוטומטי כל 3 דקות
-    let autoRefresh = setInterval(loadYnet, 180000);
-
-    // טען בהתחלה והתאם ברזולוציה כאשר משנים גודל חלון
     loadYnet();
-    let resizeTimeout;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(loadYnet, 300);
-    });
-
-    // טיפול בשגיאה בטעינת התמונה
-    ynetImg.addEventListener("error", () => {
-      ynetImg.alt = "נכשל לטעון צילום מסך של Ynet כרגע. נסה לרענן.";
-    });
+    setInterval(loadYnet, 60000);
   </script>
 </body>
 </html>
