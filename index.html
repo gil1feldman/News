@@ -3,111 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>איש תלוי – יישובים עם התרעות</title>
+  <title>חדשות במבט אחד</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
-    integrity="sha512-oqcGP3HS7b3a4ZC6GTN+Q9UroW0aakjjj4xjNv3l4g5Vq6JuTCQHMTtdFfULx3YqKlAyGfP6GSrEQe5YB1YCpA=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
-<body class="bg-gray-100 text-gray-900 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 text-center">
+  <!-- כותרת עליונה -->
+  <header class="p-4 bg-blue-700 text-white text-2xl font-bold">
+    חדשות במבט אחד
+  </header>
 
-  <div class="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 space-y-6 text-center">
-    <h1 class="text-2xl font-bold">איש תלוי – יישובים עם התרעות</h1>
-    <div id="hangman" class="text-red-600 text-xl font-mono min-h-[4rem]">טוען נתונים...</div>
-    <div id="word" class="text-3xl font-bold tracking-widest mb-4 select-none">_ _ _</div>
-    <div class="text-gray-600 text-sm">הקלד/י אות בעברית כדי לנחש</div>
-    <button onclick="startGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600">
-      התחל מחדש
-    </button>
-  </div>
+  <!-- רשת האתרים -->
+  <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+    <!-- כאן 11 -->
+    <section class="border rounded-lg overflow-hidden shadow">
+      <h2 class="bg-gray-800 text-white text-lg p-2">כאן 11</h2>
+      <iframe src="https://www.kan.org.il/" class="w-full h-[600px]" loading="lazy"></iframe>
+    </section>
 
-  <script>
-    const csvUrl = 'https://raw.githubusercontent.com/yuval-harpaz/alarms/master/data/alarms.csv';
-    let words = [];
-    const hebrewAlphabet = [...'אבגדהוזחטיכלמנסעפצקרשתםןךףץ'];
+    <!-- Ynet -->
+    <section class="border rounded-lg overflow-hidden shadow">
+      <h2 class="bg-gray-800 text-white text-lg p-2">Ynet</h2>
+      <iframe src="https://www.ynet.co.il/home/0,7340,L-8,00.html" class="w-full h-[600px]" loading="lazy"></iframe>
+    </section>
 
-    let chosenWord = '';
-    let guessedLetters = [];
-    let wrongGuesses = 0;
-    let gameOver = false;
+    <!-- וואלה -->
+    <section class="border rounded-lg overflow-hidden shadow">
+      <h2 class="bg-gray-800 text-white text-lg p-2">וואלה</h2>
+      <iframe src="https://www.walla.co.il/" class="w-full h-[600px]" loading="lazy"></iframe>
+    </section>
 
-    const wordDiv = document.getElementById('word');
-    const hangmanDiv = document.getElementById('hangman');
+    <!-- N12 -->
+    <section class="border rounded-lg overflow-hidden shadow">
+      <h2 class="bg-gray-800 text-white text-lg p-2">N12</h2>
+      <iframe src="https://www.n12.co.il/" class="w-full h-[600px]" loading="lazy"></iframe>
+    </section>
 
-    Papa.parse(csvUrl, {
-      download: true,
-      header: false,
-      complete: (results) => {
-        const rawRows = results.data;
-        const names = rawRows.map(row => row[row.length - 2]?.trim()).filter(Boolean);
-        // סינון יישובים בעברית בלבד
-        words = [...new Set(names.filter(name => /^[\u0590-\u05FF\s\-]+$/.test(name)))];
-        if (words.length === 0) {
-          hangmanDiv.textContent = 'לא נמצאו יישובים';
-          return;
-        }
-        startGame();
-      },
-      error: err => {
-        hangmanDiv.textContent = 'שגיאה בטעינת הנתונים';
-        console.error('שגיאת טעינה:', err);
-      }
-    });
+    <!-- ערוץ 14 -->
+    <section class="border rounded-lg overflow-hidden shadow md:col-span-2 lg:col-span-1">
+      <h2 class="bg-gray-800 text-white text-lg p-2">ערוץ 14</h2>
+      <iframe src="https://www.c14.co.il/" class="w-full h-[600px]" loading="lazy"></iframe>
+    </section>
+  </main>
 
-    function startGame() {
-      chosenWord = words[Math.floor(Math.random() * words.length)];
-      guessedLetters = [];
-      wrongGuesses = 0;
-      gameOver = false;
-      updateWordDisplay();
-      updateHangman();
-    }
-
-    function updateWordDisplay() {
-      const display = chosenWord.split('').map(l =>
-        l === ' ' || l === '-' ? l : (guessedLetters.includes(l) ? l : '_')
-      ).join(' ');
-      wordDiv.textContent = display;
-    }
-
-    function updateHangman() {
-      hangmanDiv.textContent = `שגיאות: ${wrongGuesses}/6`;
-    }
-
-    function handleGuess(letter) {
-      if (gameOver || guessedLetters.includes(letter)) return;
-      if (!hebrewAlphabet.includes(letter)) return;
-
-      if (chosenWord.includes(letter)) {
-        guessedLetters.push(letter);
-        updateWordDisplay();
-        if (chosenWord.split('').every(l => l === ' ' || l === '-' || guessedLetters.includes(l))) {
-          gameOver = true;
-          setTimeout(() => alert('🎉 ניצחת!'), 100);
-        }
-      } else {
-        wrongGuesses++;
-        updateHangman();
-        if (wrongGuesses >= 6) {
-          gameOver = true;
-          setTimeout(() => {
-            alert(`☹️ הפסדת! המילה הייתה: ${chosenWord}`);
-            revealWord();
-          }, 100);
-        }
-      }
-    }
-
-    function revealWord() {
-      wordDiv.textContent = chosenWord.split('').join(' ');
-    }
-
-    document.addEventListener('keydown', (e) => {
-      const letter = e.key.trim();
-      if (letter.length === 1 && hebrewAlphabet.includes(letter)) {
-        handleGuess(letter);
-      }
-    });
-  </script>
+  <!-- הערה -->
+  <footer class="p-2 text-sm text-gray-600">
+    ייתכן שחלק מהאתרים יחסמו הצגה בתוך iframe (מדיניות אבטחה של האתר).
+  </footer>
 </body>
 </html>
