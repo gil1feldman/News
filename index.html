@@ -1,124 +1,847 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>חדשות במבט אחד</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    iframe { border: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iCount — דשבורד הכנסות</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* ── Variables ── */
+  :root {
+    --bg:       #060A12;
+    --surface:  #0D1420;
+    --surface2: #131C2E;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.12);
+    --text:     #E2EAF4;
+    --muted:    #4A5878;
+    --sub:      #8898B8;
+    --green:    #00E5A0;
+    --green2:   #00B880;
+    --yellow:   #FFD166;
+    --red:      #FF6B8A;
+    --blue:     #4FACFE;
+    --radius:   16px;
+    --shadow:   0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Heebo', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ── Grain overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+
+  /* ── Layout ── */
+  .app { position: relative; z-index: 1; max-width: 1360px; margin: 0 auto; padding: 0 28px 60px; }
+
+  /* ── Header ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(6,10,18,0.85); backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    margin: 0 -28px 36px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: #000;
+    box-shadow: 0 0 20px rgba(0,229,160,0.3);
+  }
+  .logo-text { line-height: 1.2; }
+  .logo-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .logo-sub { font-size: 12px; color: var(--muted); }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+  .demo-badge {
+    background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.25);
+    color: var(--yellow); border-radius: 8px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+    display: none;
+  }
+  .demo-badge.visible { display: inline-block; }
+
+  .btn {
+    border: none; border-radius: 10px; padding: 9px 18px;
+    font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.18s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #000; }
+  .btn-primary:hover { background: #00ffb0; box-shadow: 0 0 20px rgba(0,229,160,0.4); }
+  .btn-ghost { background: var(--surface2); color: var(--sub); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+  .btn-danger { background: rgba(255,107,138,0.12); color: var(--red); border: 1px solid rgba(255,107,138,0.2); }
+  .btn-danger:hover { background: rgba(255,107,138,0.2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px;
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  .kpi-card::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.015), transparent);
+  }
+  .kpi-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .kpi-card.green .kpi-value  { color: var(--green); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.blue .kpi-value   { color: var(--blue); }
+  .kpi-card.up .kpi-value     { color: var(--green); }
+  .kpi-card.down .kpi-value   { color: var(--red); }
+
+  /* ── Charts Grid ── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; margin-bottom: 20px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .card-header {
+    padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .card-body { padding: 20px 24px; }
+
+  /* ── Period Tabs ── */
+  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 8px; padding: 3px; }
+  .tab {
+    padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; color: var(--muted); border: none; background: transparent;
+    font-family: 'Heebo', sans-serif; transition: all 0.15s;
+  }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+  /* ── Comparison bar ── */
+  .comparison-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .comparison-row:last-child { border-bottom: none; }
+  .comparison-label { font-size: 13px; color: var(--sub); }
+  .comparison-values { display: flex; gap: 16px; align-items: center; }
+  .cval { font-family: 'Space Mono', monospace; font-size: 13px; }
+  .cval.current { color: var(--text); }
+  .cval.prev { color: var(--muted); }
+  .cbadge {
+    font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+  }
+  .cbadge.up { background: rgba(0,229,160,0.12); color: var(--green); }
+  .cbadge.down { background: rgba(255,107,138,0.12); color: var(--red); }
+
+  /* ── Table ── */
+  .table-card { margin-bottom: 20px; }
+  .table-header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 12px 20px; text-align: right;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 600; background: var(--surface2);
+  }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.12s; }
+  tbody tr:hover { background: rgba(0,229,160,0.03); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 13px 20px; font-size: 14px; }
+  .td-num { color: var(--muted); font-size: 12px; font-family: monospace; }
+  .td-client { color: var(--text); font-weight: 600; }
+  .td-date { color: var(--sub); font-size: 13px; }
+  .td-amount { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text); font-weight: 700; }
+  .badge { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
+  .badge-paid { background: rgba(0,229,160,0.1); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
+  .badge-open { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.2); }
+  .badge-cancel { background: rgba(255,107,138,0.1); color: var(--red); border: 1px solid rgba(255,107,138,0.2); }
+
+  /* ── Open Invoices ── */
+  .open-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; padding: 20px 24px; }
+  .open-card {
+    background: var(--surface2); border: 1px solid rgba(255,209,102,0.15);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .open-client { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .open-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .open-amount { font-family: 'Space Mono', monospace; font-size: 18px; color: var(--yellow); font-weight: 700; }
+  .open-days { font-size: 11px; color: var(--red); margin-top: 4px; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+    backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 36px; width: 460px; max-width: 94vw;
+    box-shadow: var(--shadow); transform: translateY(16px);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .info-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
+    font-size: 13px; color: var(--sub); line-height: 1.9;
+  }
+  .info-box strong { color: var(--green); }
+  .info-box ol { padding-right: 18px; margin-top: 8px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 6px; font-weight: 600; }
+  .field input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 9px; padding: 11px 14px; color: var(--text);
+    font-family: 'Heebo', sans-serif; font-size: 14px; outline: none; transition: border 0.15s;
+    direction: ltr;
+  }
+  .field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,229,160,0.08); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-actions .btn { flex: 1; padding: 13px; font-size: 15px; }
+  .modal-error { color: var(--red); font-size: 13px; margin-top: 10px; text-align: center; }
+  .saved-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.2);
+    color: var(--green); border-radius: 8px; padding: 4px 12px;
+    font-size: 12px; font-weight: 600; margin-bottom: 14px;
+  }
+
+  /* ── Empty / Loading states ── */
+  .state-box {
+    text-align: center; padding: 64px 24px;
+    color: var(--muted); font-size: 15px; line-height: 2;
+  }
+  .state-box .icon { font-size: 40px; margin-bottom: 12px; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--green); border-radius: 50%;
+    animation: spin 0.7s linear infinite; margin: 0 auto 16px;
+  }
+
+  /* ── Client legend ── */
+  .client-legend { padding: 4px 24px 20px; }
+  .legend-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+  .legend-item:last-child { border-bottom: none; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 8px; flex-shrink: 0; }
+  .legend-name { color: var(--sub); display: flex; align-items: center; }
+  .legend-val { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text); }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    header { padding: 14px 16px; }
+    .app { padding: 0 14px 48px; }
+  }
+</style>
 </head>
-<body class="bg-gray-100 text-center">
-  <!-- כותרת עליונה -->
-  <header class="p-4 bg-blue-700 text-white text-2xl font-bold">
-    חדשות במבט אחד
-  </header>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">₪</div>
+    <div class="logo-text">
+      <div class="logo-title">דשבורד הכנסות</div>
+      <div class="logo-sub">מבוסס iCount API</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="demo-badge" id="demoBadge">נתוני Demo</span>
+    <button class="btn btn-ghost" id="btnRefresh" onclick="loadData()" style="display:none">⟳ רענן</button>
+    <button class="btn btn-danger" id="btnDisconnect" onclick="disconnect()" style="display:none">✕ התנתק</button>
+    <button class="btn btn-primary" id="btnConnect" onclick="openModal()">🔌 התחבר ל-iCount</button>
+  </div>
+</header>
 
-  <!-- רשת האתרים -->
-  <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+<div class="app">
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card green">
+      <div class="kpi-label">סה״כ הכנסות</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub" id="kpiCount">טוען...</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">שולם</div>
+      <div class="kpi-value" id="kpiPaid" style="color:var(--green)">—</div>
+      <div class="kpi-sub" id="kpiPaidCount"></div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">ממתין לתשלום</div>
+      <div class="kpi-value" id="kpiOpen">—</div>
+      <div class="kpi-sub" id="kpiOpenCount"></div>
+    </div>
+    <div class="kpi-card" id="kpiGrowthCard">
+      <div class="kpi-label">שינוי מהחודש שעבר</div>
+      <div class="kpi-value" id="kpiGrowth">—</div>
+      <div class="kpi-sub" id="kpiGrowthSub"></div>
+    </div>
+  </div>
 
-    <!-- N12 -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">N12</h2>
-      <iframe src="https://www.n12.co.il/" class="w-full h-[600px]" loading="lazy" title="N12"></iframe>
-    </section>
-
-    <!-- כאן 11 -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">כאן 11</h2>
-      <iframe src="https://www.kan.org.il/" class="w-full h-[600px]" loading="lazy" title="כאן 11"></iframe>
-    </section>
-
-    <!-- הארץ -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">הארץ</h2>
-      <iframe src="https://www.haaretz.co.il/" class="w-full h-[600px]" loading="lazy" title="הארץ"></iframe>
-    </section>
-
-    <!-- וואלה -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <h2 class="bg-gray-800 text-white text-lg p-2">וואלה</h2>
-      <iframe src="https://www.walla.co.il/" class="w-full h-[600px]" loading="lazy" title="וואלה"></iframe>
-    </section>
-
-    <!-- Ynet: כותרות RSS -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col">
-      <div class="bg-gray-800 text-white p-2 flex items-center justify-between">
-        <h2 class="text-lg">Ynet ‐ כותרות חיות</h2>
-        <div class="flex items-center gap-2">
-          <button id="refreshYnet"
-            class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
-            רענון
-          </button>
-          <a href="https://www.ynet.co.il/home/0,7340,L-8,00.html" target="_blank" rel="noopener noreferrer"
-             class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-sm">
-            מעבר לאתר
-          </a>
+  <!-- Charts -->
+  <div class="charts-grid">
+    <!-- Monthly Revenue -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">הכנסות חודשיות</span>
+        <div class="tabs">
+          <button class="tab active" onclick="setPeriod(6,this)">6 חודשים</button>
+          <button class="tab" onclick="setPeriod(12,this)">שנה</button>
+          <button class="tab" onclick="setPeriod(0,this)">הכל</button>
         </div>
       </div>
-
-      <div class="bg-white flex-1 p-3 text-right">
-        <ul id="ynetList" class="space-y-3 text-sm text-gray-800">
-          <li class="text-gray-500">טוען כותרות…</li>
-        </ul>
+      <div class="card-body">
+        <canvas id="chartMonthly" height="200"></canvas>
       </div>
+    </div>
 
-      <div class="text-xs text-gray-600 p-2 bg-gray-50">
-        הכותרות נטענות מפיד ה־RSS הרשמי של Ynet. לחיצה פותחת ידיעה בלשונית חדשה.
+    <!-- Client Pie -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">לפי לקוח</span></div>
+      <div class="card-body" style="padding-bottom:8px">
+        <canvas id="chartPie" height="200"></canvas>
       </div>
-    </section>
+      <div class="client-legend" id="clientLegend"></div>
+    </div>
+  </div>
 
-    <!-- ערוץ 14 -->
-    <section class="border rounded-lg overflow-hidden shadow flex flex-col md:col-span-2 lg:col-span-1">
-      <h2 class="bg-gray-800 text-white text-lg p-2">ערוץ 14</h2>
-      <iframe src="https://www.c14.co.il/" class="w-full h-[600px]" loading="lazy" title="ערוץ 14"></iframe>
-    </section>
-  </main>
+  <!-- Comparison + Open invoices row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" id="bottomRow">
+    <!-- Comparison -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">השוואה לתקופה קודמת</span></div>
+      <div class="card-body" id="comparisonBody">
+        <div class="state-box" style="padding:32px 0"><div class="muted">טוען...</div></div>
+      </div>
+    </div>
 
-  <!-- הערה -->
-  <footer class="p-2 text-sm text-gray-600">
-    חלק מהאתרים חוסמים הטמעה ב־iframe. עבור Ynet מוצגות כותרות ה־RSS הרשמיות במקום iframe.
-  </footer>
+    <!-- Open invoices summary -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">חשבוניות פתוחות</span></div>
+      <div id="openInvoicesBody">
+        <div class="state-box" style="padding:32px 0"><div class="muted">טוען...</div></div>
+      </div>
+    </div>
+  </div>
 
-  <script>
-    // ---- הגדרות ----
-    const RSS_URL = "https://www.ynet.co.il/Integration/StoryRss2.xml";
-    const RSS2JSON = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(RSS_URL);
-    const listEl = document.getElementById("ynetList");
-    const refreshBtn = document.getElementById("refreshYnet");
+  <!-- Invoices Table -->
+  <div class="card table-card">
+    <div class="table-header">
+      <span class="card-title">חשבוניות אחרונות</span>
+      <span style="font-size:13px;color:var(--muted)" id="tableCount"></span>
+    </div>
+    <div id="tableBody">
+      <div class="state-box"><div class="spinner"></div>טוען נתונים...</div>
+    </div>
+  </div>
+</div>
 
-    async function loadYnet() {
-      try {
-        listEl.innerHTML = '<li class="text-gray-500">טוען כותרות…</li>';
-        const res = await fetch(RSS2JSON, { cache: "no-store" });
-        if (!res.ok) throw new Error("RSS request failed: " + res.status);
-        const data = await res.json();
-        const items = (data.items || []).slice(0, 12);
-        if (!items.length) {
-          listEl.innerHTML = '<li class="text-gray-500">לא נמצאו כותרות כרגע.</li>';
-          return;
-        }
-        listEl.innerHTML = items.map(item => {
-          const title = item.title || "ללא כותרת";
-          const link = item.link || "#";
-          const pub = item.pubDate ? new Date(item.pubDate).toLocaleString('he-IL') : "";
-          return `
-            <li class="border-b pb-2">
-              <a href="${link}" target="_blank" rel="noopener noreferrer"
-                 class="font-medium hover:underline">${title}</a>
-              ${pub ? `<div class="text-xs text-gray-500 mt-1">${pub}</div>` : ""}
-            </li>`;
-        }).join("");
-      } catch (err) {
-        console.error(err);
-        listEl.innerHTML = `<li class="text-red-600">נכשלה טעינת ה־RSS של Ynet. נסה לרענן.</li>`;
+<!-- ── Settings Modal ── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>🔌 התחברות ל-iCount</h2>
+    <p class="modal-sub">הפרטים נשמרים אך ורק בדפדפן שלך (localStorage) תחת מפתח ייחודי למערכת זו.</p>
+
+    <div id="savedIndicator" style="display:none">
+      <div class="saved-badge">✓ פרטים שמורים — ניתן לעדכן</div>
+    </div>
+
+    <div class="info-box">
+      <strong>איך להשיג API Token:</strong>
+      <ol>
+        <li>התחבר ל-iCount → <strong>הגדרות → API</strong></li>
+        <li>לחץ "צור מפתח API חדש"</li>
+        <li>העתק את ה-Token שמוצג (מופיע פעם אחת בלבד)</li>
+        <li>את ה-CID תמצא ב: <strong>מערכת ← הגדרות ← החברה שלי</strong> — זה טקסט באותיות קטנות, לא מספר</li>
+      </ol>
+    </div>
+
+    <div class="field">
+      <label>מזהה חברה (CID) — באותיות קטנות באנגלית</label>
+      <input type="text" id="inputCid" placeholder="mycompany" autocomplete="off" style="text-transform:lowercase">
+    </div>
+    <div class="field">
+      <label>שם משתמש (אימייל)</label>
+      <input type="text" id="inputUser" placeholder="user@example.com" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>API Token / סיסמה</label>
+      <input type="password" id="inputToken" placeholder="••••••••••••••••" autocomplete="new-password">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="btnSave" onclick="saveAndConnect()">שמור והתחבר</button>
+      <button class="btn btn-ghost" onclick="closeModal()">ביטול</button>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+  </div>
+</div>
+
+<script>
+// ── Storage key — namespaced to avoid conflicts with other apps ──
+const STORAGE_KEY = 'icount_dashboard_v1_creds';
+
+// ── Demo data ──
+const DEMO = [
+  { docnum:1001, client_name:"סטארטאפ טק בע\"מ",   date:"2024-03-15", sum:12500, currency:"ILS", status:"paid"   },
+  { docnum:1002, client_name:"חברת מדיה דיגיטל",   date:"2024-03-28", sum:8200,  currency:"ILS", status:"paid"   },
+  { docnum:1003, client_name:"פתרונות B2B",         date:"2024-04-10", sum:18000, currency:"ILS", status:"paid"   },
+  { docnum:1004, client_name:"סטארטאפ טק בע\"מ",   date:"2024-04-20", sum:12500, currency:"ILS", status:"paid"   },
+  { docnum:1005, client_name:"סוכנות גרפיקה",       date:"2024-05-05", sum:6800,  currency:"ILS", status:"paid"   },
+  { docnum:1006, client_name:"חברת מדיה דיגיטל",   date:"2024-05-18", sum:9400,  currency:"ILS", status:"open"   },
+  { docnum:1007, client_name:"ייעוץ אסטרטגי",      date:"2024-06-02", sum:22000, currency:"ILS", status:"paid"   },
+  { docnum:1008, client_name:"פתרונות B2B",         date:"2024-06-15", sum:18000, currency:"ILS", status:"paid"   },
+  { docnum:1009, client_name:"סטארטאפ טק בע\"מ",   date:"2024-07-01", sum:12500, currency:"ILS", status:"paid"   },
+  { docnum:1010, client_name:"סוכנות גרפיקה",       date:"2024-07-14", sum:7200,  currency:"ILS", status:"open"   },
+  { docnum:1011, client_name:"יועץ עצמאי",          date:"2024-07-25", sum:5500,  currency:"ILS", status:"paid"   },
+  { docnum:1012, client_name:"חברת מדיה דיגיטל",   date:"2024-08-03", sum:9400,  currency:"ILS", status:"paid"   },
+  { docnum:1013, client_name:"ייעוץ אסטרטגי",      date:"2024-08-20", sum:22000, currency:"ILS", status:"open"   },
+  { docnum:1014, client_name:"פתרונות B2B",         date:"2024-09-08", sum:18000, currency:"ILS", status:"paid"   },
+  { docnum:1015, client_name:"יועץ עצמאי",          date:"2024-09-22", sum:5500,  currency:"ILS", status:"paid"   },
+  { docnum:1016, client_name:"סטארטאפ טק בע\"מ",   date:"2024-10-05", sum:12500, currency:"ILS", status:"paid"   },
+  { docnum:1017, client_name:"סוכנות גרפיקה",       date:"2024-10-19", sum:8100,  currency:"ILS", status:"paid"   },
+  { docnum:1018, client_name:"חברת מדיה דיגיטל",   date:"2024-11-02", sum:9400,  currency:"ILS", status:"paid"   },
+  { docnum:1019, client_name:"ייעוץ אסטרטגי",      date:"2024-11-16", sum:25000, currency:"ILS", status:"open"   },
+  { docnum:1020, client_name:"פתרונות B2B",         date:"2024-12-01", sum:18000, currency:"ILS", status:"paid"   },
+  { docnum:1021, client_name:"יועץ עצמאי",          date:"2024-12-14", sum:6000,  currency:"ILS", status:"paid"   },
+  { docnum:1022, client_name:"סטארטאפ טק בע\"מ",   date:"2025-01-03", sum:12500, currency:"ILS", status:"paid"   },
+  { docnum:1023, client_name:"סוכנות גרפיקה",       date:"2025-01-17", sum:8100,  currency:"ILS", status:"paid"   },
+  { docnum:1024, client_name:"חברת מדיה דיגיטל",   date:"2025-02-01", sum:9400,  currency:"ILS", status:"paid"   },
+  { docnum:1025, client_name:"ייעוץ אסטרטגי",      date:"2025-02-20", sum:28000, currency:"ILS", status:"paid"   },
+];
+
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const COLORS = ['#00E5A0','#4FACFE','#FFD166','#FF6B8A','#A78BFA','#FB923C'];
+
+let allInvoices = [];
+let isDemo = true;
+let chartMonthly = null;
+let chartPie = null;
+let activePeriod = 6;
+
+// ── Formatting ──
+const fmt = n => new Intl.NumberFormat('he-IL',{style:'currency',currency:'ILS',maximumFractionDigits:0}).format(n);
+const daysDiff = d => Math.floor((Date.now() - new Date(d)) / 86400000);
+
+// ── Credentials storage (namespaced) ──
+function saveCreds(cid, user, token) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ cid, user, token, saved: Date.now() }));
+  } catch(e) { console.warn('localStorage unavailable', e); }
+}
+function loadCreds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+function clearCreds() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+// ── Modal ──
+function openModal() {
+  const creds = loadCreds();
+  if (creds) {
+    document.getElementById('inputCid').value   = creds.cid   || '';
+    document.getElementById('inputUser').value  = creds.user  || '';
+    document.getElementById('inputToken').value = creds.token || '';
+    document.getElementById('savedIndicator').style.display = 'block';
+  } else {
+    document.getElementById('savedIndicator').style.display = 'none';
+  }
+  document.getElementById('modalError').textContent = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ── Connect ──
+async function saveAndConnect() {
+  const cid   = document.getElementById('inputCid').value.trim();
+  const user  = document.getElementById('inputUser').value.trim();
+  const token = document.getElementById('inputToken').value.trim();
+
+  if (!cid || !user || !token) {
+    document.getElementById('modalError').textContent = 'יש למלא את כל השדות.';
+    return;
+  }
+
+  document.getElementById('btnSave').disabled = true;
+  document.getElementById('btnSave').textContent = 'מתחבר...';
+  document.getElementById('modalError').textContent = '';
+
+  try {
+    const docs = await fetchDocs(cid, user, token);
+    saveCreds(cid, user, token);
+    allInvoices = docs;
+    isDemo = false;
+    closeModal();
+    renderAll();
+    updateHeaderState();
+  } catch(e) {
+    document.getElementById('modalError').textContent = '❌ ' + e.message;
+  } finally {
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('btnSave').textContent = 'שמור והתחבר';
+  }
+}
+
+async function loadData() {
+  const creds = loadCreds();
+  if (!creds) { openModal(); return; }
+  try {
+    const docs = await fetchDocs(creds.cid, creds.user, creds.token);
+    allInvoices = docs;
+    isDemo = false;
+    renderAll();
+  } catch(e) {
+    alert('שגיאה בטעינת נתונים: ' + e.message);
+  }
+}
+
+function disconnect() {
+  if (!confirm('להתנתק ולמחוק את פרטי ה-API השמורים?')) return;
+  clearCreds();
+  allInvoices = DEMO;
+  isDemo = true;
+  updateHeaderState();
+  renderAll();
+}
+
+// ── iCount API ──
+async function fetchDocs(cid, user, token) {
+  const body = new FormData();
+  body.append('cid',  cid);
+  body.append('user', user);
+  body.append('pass', token);
+  body.append('doctype', 'invoice');
+  body.append('status', 'all');
+
+  const res = await fetch('https://api.icount.co.il/api/v3.php/doc/search', {
+    method: 'POST', body
+  });
+  if (!res.ok) throw new Error(`שגיאת שרת ${res.status}`);
+  const data = await res.json();
+  if (!data.status) throw new Error(data.reason || 'תגובה לא תקינה מ-iCount');
+  return Array.isArray(data.docs) ? data.docs : [];
+}
+
+// ── Data Processing ──
+function processData(invoices, periodMonths) {
+  const now     = new Date();
+  const cutoff  = periodMonths > 0
+    ? new Date(now.getFullYear(), now.getMonth() - periodMonths + 1, 1)
+    : new Date(0);
+
+  const monthly    = {};
+  const clients    = {};
+  let totalRevenue = 0, totalPaid = 0, totalOpen = 0;
+  let paidCount    = 0, openCount = 0;
+
+  invoices.forEach(inv => {
+    const d   = new Date(inv.date);
+    const amt = parseFloat(inv.sum) || 0;
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+
+    totalRevenue += amt;
+    if (inv.status === 'paid') { totalPaid += amt; paidCount++; }
+    else if (inv.status === 'open') { totalOpen += amt; openCount++; }
+
+    clients[inv.client_name] = (clients[inv.client_name] || 0) + amt;
+
+    if (d >= cutoff) {
+      if (!monthly[key]) monthly[key] = { label: MONTHS_HE[d.getMonth()] + " '" + String(d.getFullYear()).slice(2), total: 0, key };
+      monthly[key].total += amt;
+    }
+  });
+
+  const monthlyArr = Object.values(monthly).sort((a,b) => a.key.localeCompare(b.key));
+  const clientArr  = Object.entries(clients)
+    .map(([name,value]) => ({name,value}))
+    .sort((a,b) => b.value - a.value)
+    .slice(0,6);
+
+  // Growth vs previous month
+  let growthPct = null, growthAbs = null;
+  if (monthlyArr.length >= 2) {
+    const last = monthlyArr[monthlyArr.length-1].total;
+    const prev = monthlyArr[monthlyArr.length-2].total;
+    if (prev) {
+      growthPct = ((last - prev) / prev * 100).toFixed(1);
+      growthAbs = last - prev;
+    }
+  }
+
+  // Comparison: current month vs same month last year
+  const curMonth = now.getMonth(); const curYear = now.getFullYear();
+  const thisYear  = invoices.filter(i => { const d=new Date(i.date); return d.getMonth()===curMonth && d.getFullYear()===curYear; });
+  const lastYear  = invoices.filter(i => { const d=new Date(i.date); return d.getMonth()===curMonth && d.getFullYear()===curYear-1; });
+  const thisQ     = invoices.filter(i => { const d=new Date(i.date); const q=Math.floor(d.getMonth()/3); return q===Math.floor(curMonth/3) && d.getFullYear()===curYear; });
+  const lastQ     = invoices.filter(i => { const d=new Date(i.date); const q=Math.floor(d.getMonth()/3); return q===Math.floor(curMonth/3) && d.getFullYear()===curYear-1; });
+  const sum = arr => arr.reduce((s,i)=>s+parseFloat(i.sum||0),0);
+
+  const openInvoices = invoices.filter(i => i.status === 'open').sort((a,b) => new Date(a.date)-new Date(b.date));
+
+  return {
+    monthlyArr, clientArr, totalRevenue, totalPaid, totalOpen,
+    paidCount, openCount, growthPct, growthAbs,
+    comparison: {
+      month:   { current: sum(thisYear), prev: sum(lastYear), label: MONTHS_HE[curMonth] },
+      quarter: { current: sum(thisQ),    prev: sum(lastQ),    label: `רבעון ${Math.floor(curMonth/3)+1}` },
+    },
+    openInvoices
+  };
+}
+
+// ── Render ──
+function renderAll() {
+  const d = processData(allInvoices, activePeriod);
+  renderKPIs(d);
+  renderMonthlyChart(d);
+  renderPieChart(d);
+  renderComparison(d);
+  renderOpenInvoices(d);
+  renderTable();
+}
+
+function renderKPIs(d) {
+  document.getElementById('kpiTotal').textContent    = fmt(d.totalRevenue);
+  document.getElementById('kpiCount').textContent    = `${allInvoices.length} חשבוניות`;
+  document.getElementById('kpiPaid').textContent     = fmt(d.totalPaid);
+  document.getElementById('kpiPaidCount').textContent = `${d.paidCount} חשבוניות שולמו`;
+  document.getElementById('kpiOpen').textContent     = fmt(d.totalOpen);
+  document.getElementById('kpiOpenCount').textContent = `${d.openCount} חשבוניות פתוחות`;
+
+  const growthEl   = document.getElementById('kpiGrowth');
+  const growthCard = document.getElementById('kpiGrowthCard');
+  const growthSub  = document.getElementById('kpiGrowthSub');
+  if (d.growthPct !== null) {
+    const up = parseFloat(d.growthPct) >= 0;
+    growthEl.textContent = `${up?'+':''}${d.growthPct}%`;
+    growthEl.style.color = up ? 'var(--green)' : 'var(--red)';
+    growthSub.textContent = `${up?'+':''}${fmt(d.growthAbs)} לעומת חודש שעבר`;
+    growthCard.className = 'kpi-card ' + (up ? 'up' : 'down');
+  } else {
+    growthEl.textContent = '—';
+    growthSub.textContent = 'אין מספיק נתונים';
+  }
+}
+
+function renderMonthlyChart(d) {
+  const ctx = document.getElementById('chartMonthly').getContext('2d');
+  const labels = d.monthlyArr.map(m => m.label);
+  const values = d.monthlyArr.map(m => m.total);
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0,   'rgba(0,229,160,0.35)');
+  gradient.addColorStop(1,   'rgba(0,229,160,0)');
+
+  if (chartMonthly) chartMonthly.destroy();
+  chartMonthly = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: '#00E5A0', borderWidth: 2.5,
+        backgroundColor: gradient, fill: true,
+        tension: 0.4, pointBackgroundColor: '#00E5A0',
+        pointRadius: 4, pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        rtl: true, textDirection: 'rtl',
+        callbacks: { label: ctx => fmt(ctx.parsed.y) },
+        backgroundColor: '#1A2540', borderColor: '#2A3A60', borderWidth: 1,
+        padding: 10, titleColor: '#8898B8', bodyColor: '#E2EAF4'
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5878', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5878', font: { size: 11 },
+          callback: v => '₪' + (v/1000).toFixed(0) + 'K' }, border: { display: false } }
       }
     }
+  });
+}
 
-    refreshBtn.addEventListener("click", loadYnet);
-    loadYnet();
-    setInterval(loadYnet, 60000);
-  </script>
+function renderPieChart(d) {
+  const ctx = document.getElementById('chartPie').getContext('2d');
+  if (chartPie) chartPie.destroy();
+  chartPie = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: d.clientArr.map(c=>c.name),
+      datasets: [{ data: d.clientArr.map(c=>c.value), backgroundColor: COLORS, borderWidth: 0, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          rtl: true, textDirection: 'rtl',
+          callbacks: { label: ctx => ' ' + fmt(ctx.parsed) },
+          backgroundColor: '#1A2540', borderColor: '#2A3A60', borderWidth: 1,
+          padding: 10, titleColor: '#8898B8', bodyColor: '#E2EAF4'
+        }
+      }
+    }
+  });
+
+  const legend = document.getElementById('clientLegend');
+  legend.innerHTML = d.clientArr.map((c,i) => `
+    <div class="legend-item">
+      <div class="legend-name"><div class="legend-dot" style="background:${COLORS[i]}"></div>${c.name.length>18?c.name.slice(0,18)+'…':c.name}</div>
+      <div class="legend-val">${fmt(c.value)}</div>
+    </div>`).join('');
+}
+
+function renderComparison(d) {
+  const body = document.getElementById('comparisonBody');
+  const rows = [
+    { label: 'חודש נוכחי (' + d.comparison.month.label + ')', ...d.comparison.month },
+    { label: d.comparison.quarter.label + ' נוכחי', ...d.comparison.quarter },
+  ];
+  body.innerHTML = rows.map(r => {
+    const diff = r.current - r.prev;
+    const pct  = r.prev ? (diff / r.prev * 100).toFixed(1) : null;
+    const up   = diff >= 0;
+    return `<div class="comparison-row">
+      <div class="comparison-label">${r.label}</div>
+      <div class="comparison-values">
+        <span class="cval prev">${fmt(r.prev)}</span>
+        <span>→</span>
+        <span class="cval current">${fmt(r.current)}</span>
+        ${pct !== null ? `<span class="cbadge ${up?'up':'down'}">${up?'+':''}${pct}%</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderOpenInvoices(d) {
+  const body = document.getElementById('openInvoicesBody');
+  if (!d.openInvoices.length) {
+    body.innerHTML = '<div class="state-box" style="padding:32px 0"><div style="font-size:28px">✓</div><div style="color:var(--green);margin-top:8px;font-weight:700">אין חשבוניות פתוחות!</div></div>';
+    return;
+  }
+  body.innerHTML = `<div class="open-grid">${
+    d.openInvoices.slice(0,6).map(inv => {
+      const days = daysDiff(inv.date);
+      return `<div class="open-card">
+        <div class="open-client">${inv.client_name}</div>
+        <div class="open-meta">חשבונית #${inv.docnum} · ${inv.date}</div>
+        <div class="open-amount">${fmt(inv.sum)}</div>
+        ${days>30 ? `<div class="open-days">⚠ ${days} ימים ממתין</div>` : ''}
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const rows  = [...allInvoices].reverse().slice(0, 20);
+  document.getElementById('tableCount').textContent = `מציג ${rows.length} מתוך ${allInvoices.length}`;
+
+  tbody.innerHTML = `<table>
+    <thead><tr>
+      <th>מספר</th><th>לקוח</th><th>תאריך</th><th>סכום</th><th>סטטוס</th>
+    </tr></thead>
+    <tbody>${rows.map(inv => {
+      const badgeClass = inv.status === 'paid' ? 'badge-paid' : inv.status === 'open' ? 'badge-open' : 'badge-cancel';
+      const badgeLabel = inv.status === 'paid' ? 'שולם' : inv.status === 'open' ? 'פתוחה' : 'בוטל';
+      return `<tr>
+        <td class="td-num">#${inv.docnum}</td>
+        <td class="td-client">${inv.client_name}</td>
+        <td class="td-date">${inv.date}</td>
+        <td class="td-amount">${fmt(inv.sum)}</td>
+        <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function updateHeaderState() {
+  document.getElementById('demoBadge').classList.toggle('visible', isDemo);
+  document.getElementById('btnConnect').style.display   = isDemo ? 'inline-block' : 'none';
+  document.getElementById('btnRefresh').style.display    = isDemo ? 'none' : 'inline-block';
+  document.getElementById('btnDisconnect').style.display = isDemo ? 'none' : 'inline-block';
+}
+
+function setPeriod(months, btn) {
+  activePeriod = months;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const d = processData(allInvoices, activePeriod);
+  renderMonthlyChart(d);
+}
+
+// ── Init ──
+(function init() {
+  const creds = loadCreds();
+  if (creds) {
+    // Auto-connect with saved credentials
+    document.getElementById('btnConnect').textContent = '🔄 מתחבר...';
+    fetchDocs(creds.cid, creds.user, creds.token)
+      .then(docs => {
+        allInvoices = docs;
+        isDemo = false;
+        renderAll();
+        updateHeaderState();
+      })
+      .catch(() => {
+        // Fall back to demo silently
+        allInvoices = DEMO;
+        renderAll();
+        updateHeaderState();
+      });
+  } else {
+    allInvoices = DEMO;
+    renderAll();
+    updateHeaderState();
+  }
+})();
+</script>
 </body>
 </html>
